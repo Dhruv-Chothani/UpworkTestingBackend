@@ -20,10 +20,14 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
   const token = jwt.sign({ id: admin._id, email }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+  // Use secure cookies in production so auth works on Vercel (cross-site)
+  const isProd = process.env.NODE_ENV === 'production';
   res.cookie('token', token, {
     httpOnly: true,
-    sameSite: 'lax',
-    secure: false,
+    sameSite: isProd ? 'none' : 'lax',
+    secure: isProd,
+    path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
   return res.json({ token });
