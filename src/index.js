@@ -23,20 +23,37 @@ const mongoUri =
 // Trust proxy for Vercel
 app.set('trust proxy', true);
 
-/* ------------------------------------------------------------------
-   🔥 UNIVERSAL ALLOW-ALL CORS (NO ERRORS EVER)
------------------------------------------------------------------- */
+// CORS Configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:8080',
+      'http://localhost:5173',
+      'https://upwork-testing.vercel.app'
+    ];
 
-app.use(cors({
-  origin: true,            // allow ALL origins
-  credentials: true,       // allow cookies
+    if (allowedOrigins.includes(origin) || origin.endsWith('vercel.app')) {
+      callback(null, true);
+    } else {
+      console.warn('CORS blocked for origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['set-cookie']
-}));
+  exposedHeaders: ['set-cookie'],
+  optionsSuccessStatus: 200
+};
 
-// Handle ALL preflight requests globally
-app.options('*', cors());
+// Enable CORS for all routes
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 /* ------------------------------------------------------------------
    Middleware
@@ -76,9 +93,6 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ message: 'Server error', error: err.message });
 });
 
-/* ------------------------------------------------------------------
-   Start Server
------------------------------------------------------------------- */
 
 const start = async () => {
   await connectDb(mongoUri);
