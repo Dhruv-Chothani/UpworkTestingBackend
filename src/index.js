@@ -19,12 +19,31 @@ const mongoUri =
   process.env.MONGO_URI ||
   'mongodb+srv://dhruv:123@cluster0.us4e5ih.mongodb.net/Up01';
 
+// CORS configuration
+const allowedOrigins = process.env.ALLOWED_ORIGIN
+  ? process.env.ALLOWED_ORIGIN.split(',').map(origin => origin.trim())
+  : ['http://localhost:8080', 'http://localhost:5173', 'https://upwork-testing.vercel.app'];
+
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGIN?.split(',') || '*',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
+
+// Handle preflight requests
+app.options('*', cors());
 app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan('dev'));
