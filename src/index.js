@@ -23,30 +23,58 @@ const mongoUri =
 app.set('trust proxy', true);
 
 // CORS Configuration
-const corsOptions = {
-  origin: 'https://upwork-testing.vercel.app',
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+const allowedOrigins = [
+  'http://localhost:8080',
+  'http://localhost:5173',
+  'https://upwork-testing.vercel.app'
+];
+
+// Enable CORS pre-flight across all routes
+app.options('*', cors({
+  origin: allowedOrigins,
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 204,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+}));
+
+// Apply CORS with options
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = `The CORS policy for this site does not allow access from the specified origin: ${origin}`;
+      console.warn(msg);
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['set-cookie'],
+  optionsSuccessStatus: 200,
   preflightContinue: false,
-};
+  maxAge: 86400 // 24 hours
+}));
 
-// Enable CORS for all routes
-app.use(cors(corsOptions));
+// Parse cookies
+app.use(cookieParser());
 
-// Handle preflight requests
-app.options('*', cors(corsOptions));
+// Parse JSON bodies
+app.use(express.json());
 
-// Log all requests for debugging
+// Log all requests
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`, {
     headers: req.headers,
+    cookies: req.cookies,
     body: req.body
   });
   next();
 });
-app.use(cookieParser());
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan('dev'));
 
