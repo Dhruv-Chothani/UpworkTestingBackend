@@ -23,32 +23,46 @@ const mongoUri =
 app.set('trust proxy', true);
 
 // CORS configuration - MUST be before any routes
-const allowedOrigins = process.env.ALLOWED_ORIGIN
-  ? process.env.ALLOWED_ORIGIN.split(',').map(origin => origin.trim())
-  : [
-      'http://localhost:8080',
-      'http://localhost:5173',
-      'https://upwork-testing.vercel.app',
-      'https://upwork-testing-frontend.vercel.app',
-      'https://upwork-testing-backend.vercel.app'
-    ];
+const allowedOrigins = [
+  'http://localhost:8080',
+  'http://localhost:5173',
+  'https://upwork-testing.vercel.app',
+  'https://upwork-testing-backend.vercel.app'
+];
 
-// CORS configuration
+// Add any additional origins from environment variable
+if (process.env.ALLOWED_ORIGIN) {
+  const additionalOrigins = process.env.ALLOWED_ORIGIN.split(',').map(origin => origin.trim());
+  allowedOrigins.push(...additionalOrigins);
+}
+
+// CORS middleware for all other requests
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      console.log('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
+    console.log('Incoming origin:', origin);
+    // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) {
+      return callback(null, true);
     }
+    
+    // Check if origin is in allowed list or wildcard
+    if (allowedOrigins.some(allowedOrigin => 
+      origin === allowedOrigin || 
+      allowedOrigin === '*' || 
+      (allowedOrigin instanceof RegExp && allowedOrigin.test(origin))
+    )) {
+      return callback(null, true);
+    }
+    
+    console.log(`CORS blocked origin: ${origin}. Allowed:`, allowedOrigins);
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   exposedHeaders: ['Content-Type'],
   preflightContinue: false,
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 204,
 };
 
 // Apply CORS middleware
