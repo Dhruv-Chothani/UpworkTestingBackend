@@ -22,55 +22,28 @@ const mongoUri =
 // Trust proxy for Vercel (must be first)
 app.set('trust proxy', true);
 
-// CORS configuration - MUST be before any routes
-const allowedOrigins = [
-  'http://localhost:8080',
-  'http://localhost:5173',
-  'https://upwork-testing.vercel.app',
-  'https://upwork-testing-backend.vercel.app'
-];
-
-// Add any additional origins from environment variable
-if (process.env.ALLOWED_ORIGIN) {
-  const additionalOrigins = process.env.ALLOWED_ORIGIN.split(',').map(origin => origin.trim());
-  allowedOrigins.push(...additionalOrigins);
-}
-
-// CORS middleware for all other requests
+// CORS Configuration
 const corsOptions = {
-  origin: (origin, callback) => {
-    console.log('Incoming origin:', origin);
-    // Allow requests with no origin (like mobile apps, Postman, curl)
-    if (!origin) {
-      return callback(null, true);
-    }
-    
-    // Check if origin is in allowed list or wildcard
-    if (allowedOrigins.some(allowedOrigin => 
-      origin === allowedOrigin || 
-      allowedOrigin === '*' || 
-      (allowedOrigin instanceof RegExp && allowedOrigin.test(origin))
-    )) {
-      return callback(null, true);
-    }
-    
-    console.log(`CORS blocked origin: ${origin}. Allowed:`, allowedOrigins);
-    return callback(new Error(`Origin ${origin} not allowed by CORS`));
-  },
+  origin: 'https://upwork-testing.vercel.app',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['Content-Type'],
-  preflightContinue: false,
+  allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 204,
+  preflightContinue: false,
 };
 
-// Apply CORS middleware
+// Enable CORS for all routes
 app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 // Log all requests for debugging
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`, {
+    headers: req.headers,
+    body: req.body
+  });
   next();
 });
 app.use(cookieParser());
