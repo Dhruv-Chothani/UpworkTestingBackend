@@ -163,3 +163,4 @@ export const updateBookingStatusInSheets = async (bookingDate, bookingTime, newS
   }
 };
 
+

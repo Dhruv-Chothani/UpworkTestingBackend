@@ -114,3 +114,4 @@ When a booking is created, it should automatically appear in your Google Sheet w
 - Headers are automatically added on first booking
 - Status updates are also synced to Sheets when changed in admin panel
 
+

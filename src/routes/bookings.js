@@ -97,5 +97,17 @@ router.patch('/:id/status', authMiddleware, async (req, res) => {
   res.json(booking);
 });
 
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    const booking = await Booking.findByIdAndDelete(req.params.id);
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    
+    res.json({ message: 'Booking deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting booking:', error);
+    res.status(500).json({ message: 'Failed to delete booking' });
+  }
+});
+
 export default router;
 
