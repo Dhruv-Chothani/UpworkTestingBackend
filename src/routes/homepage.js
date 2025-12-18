@@ -81,7 +81,10 @@ router.put('/', authMiddleware, async (req, res) => {
       homepage = new HomePage(updates);
     } else {
       Object.assign(homepage, updates);
-      homepage.updatedBy = req.user.id;
+      // Only set updatedBy if user exists
+      if (req.user && req.user.id) {
+        homepage.updatedBy = req.user.id;
+      }
     }
     
     await homepage.save();
